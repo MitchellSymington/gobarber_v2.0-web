@@ -1,5 +1,5 @@
 /**
- * Criado para reuniar as api de contexto dentro de um arquivo so
+ * Criado para reunir as api de contexto dentro de um arquivo so
  */
 
 import React from 'react';

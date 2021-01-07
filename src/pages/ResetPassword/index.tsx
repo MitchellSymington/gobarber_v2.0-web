@@ -1,13 +1,9 @@
 import React, { useCallback, useRef } from 'react';
-import { FiArrowLeft, FiUser, FiMail, FiLock } from 'react-icons/fi';
+import { FiLock } from 'react-icons/fi';
 import { FormHandles } from '@unform/core';
 import { Form } from '@unform/web';
 import * as Yup from 'yup';
-import { Link, useHistory } from 'react-router-dom';
-
-import api from '../../services/api';
-
-import { useToast } from '../../hooks/toast';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import getValidationErrors from '../../utils/getValidationErrors';
 
@@ -17,42 +13,51 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 
 import { Container, Content, AnimationContainer, Background } from './styles';
+import { useToast } from '../../hooks/toast';
+import api from '../../services/api';
 
-interface SignUpFormDate {
-  name: string;
-  email: string;
+interface ResetPassworFormData {
   password: string;
+  password_confirmation: string;
 }
 
-const SignUp: React.FC = () => {
+const SignIn: React.FC = () => {
   const formRef = useRef<FormHandles>(null);
+
   const { addToast } = useToast();
+
   const history = useHistory();
+  const location = useLocation();
 
   const handleSubmit = useCallback(
-    async (data: SignUpFormDate) => {
+    async (data: ResetPassworFormData) => {
       try {
         formRef.current?.setErrors({});
         const schema = Yup.object().shape({
-          name: Yup.string().required('Nome é obrigatório'),
-          email: Yup.string()
-            .required('E-mail é obrigatório')
-            .email('Digite um e-mail válido'),
-          password: Yup.string().required().min(6, 'Mínimo de 6 caracteres'),
+          password: Yup.string().required('Campo obrigatório'),
+          password_confirmation: Yup.string()
+            .required('Campo obrigatório')
+            .oneOf([Yup.ref('password')], 'As senhas não são iguais'),
         });
 
         await schema.validate(data, {
           abortEarly: false,
         });
 
-        await api.post('/users', data);
-        history.push('/');
+        const { password, password_confirmation } = data;
+        const token = location.search.replace('?token=', '');
 
-        addToast({
-          type: 'success',
-          title: 'Cadastro realizado!',
-          description: 'Você já pode fazer seu logon no GoBarber',
+        if (!token) {
+          throw new Error();
+        }
+
+        await api.post('/password/reset', {
+          password,
+          password_confirmation,
+          token,
         });
+
+        history.push('/');
       } catch (err) {
         if (err instanceof Yup.ValidationError) {
           const errors = getValidationErrors(err);
@@ -61,47 +66,46 @@ const SignUp: React.FC = () => {
 
           return;
         }
-
         addToast({
           type: 'error',
-          title: 'Erro no cadastro',
-          description: 'Erro ao fazer cadastro, tente novamente',
+          title: 'Erro ao resetar senha.',
+          description: 'Ocorreu um erro ao resetar sua senha, tente novamente',
         });
       }
     },
-    [addToast, history],
+    [addToast, history, location.search],
   );
 
   return (
     <Container>
-      <Background />
       <Content>
         <AnimationContainer>
           <img src={logoImg} alt="GoBarber" />
 
           <Form ref={formRef} onSubmit={handleSubmit}>
-            <h1>Faça Seu Cadastro</h1>
+            <h1>Resetar senha</h1>
 
-            <Input name="name" icon={FiUser} placeholder="Nome" />
-            <Input name="email" icon={FiMail} placeholder="E-mail" />
             <Input
               name="password"
               icon={FiLock}
               type="password"
-              placeholder="Senha"
+              placeholder="Nova senha"
             />
 
-            <Button type="submit">Cadastrar</Button>
-          </Form>
+            <Input
+              name="password_confirmation"
+              icon={FiLock}
+              type="password"
+              placeholder="Confirmar senha"
+            />
 
-          <Link to="/">
-            <FiArrowLeft />
-            Voltar para o login
-          </Link>
+            <Button type="submit">Alterar senha</Button>
+          </Form>
         </AnimationContainer>
       </Content>
+      <Background />
     </Container>
   );
 };
 
-export default SignUp;
+export default SignIn;
