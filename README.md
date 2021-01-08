@@ -6,7 +6,7 @@
 `$ git clone https://github.com/MitchellSymington/gobarber-web.git`
 
 :two: Ir para o diretório </br>
-`$ cd gobarber-web`
+`$ cd gobarber_v2.0-web`
 
 :three: Instalar dependencias</br>
 `$ yarn install`
